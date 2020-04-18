@@ -3,7 +3,11 @@ use http_service_mock::make_server;
 use http_types::headers::{HeaderName, HeaderValue};
 use http_types::{Method, Request, Url};
 use std::str::FromStr;
+<<<<<<< HEAD
 use tide::{Middleware, Next, Response};
+=======
+use tide::{Middleware, Next, Request as TRequest, Response};
+>>>>>>> a7bc028... cargo fmt
 
 #[async_std::test]
 async fn nested() {
@@ -52,7 +56,7 @@ async fn nested_middleware() {
             &'a self,
             req: tide::Request<State>,
             next: Next<'a, State>,
-        ) -> BoxFuture<'a, tide::Response> {
+        ) -> BoxFuture<'a, tide::Result<tide::Response>> {
             Box::pin(async move {
                 let res = next.run(req).await;
                 let res = res.set_header(
