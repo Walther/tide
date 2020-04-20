@@ -3,11 +3,7 @@ use http_service_mock::make_server;
 use http_types::headers::{HeaderName, HeaderValue};
 use http_types::{Method, Request, Url};
 use std::str::FromStr;
-<<<<<<< HEAD
-use tide::{Middleware, Next, Response};
-=======
-use tide::{Middleware, Next, Request as TRequest, Response};
->>>>>>> a7bc028... cargo fmt
+use tide::{Middleware, Next};
 
 #[async_std::test]
 async fn nested() {
@@ -40,7 +36,7 @@ async fn nested() {
 
 #[async_std::test]
 async fn nested_middleware() {
-    let echo_path = |req: tide::Request<()>| async move { req.uri().path().to_string() };
+    let echo_path = |req: tide::Request<()>| async move { Ok(req.uri().path().to_string()) };
 
     #[derive(Debug, Clone, Default)]
     pub struct TestMiddleware;
@@ -58,7 +54,7 @@ async fn nested_middleware() {
             next: Next<'a, State>,
         ) -> BoxFuture<'a, tide::Result<tide::Response>> {
             Box::pin(async move {
-                let res = next.run(req).await;
+                let res = next.run(req).await?;
                 let res = res.set_header(
                     HeaderName::from_ascii("X-Tide-Test".to_owned().into_bytes()).unwrap(),
                     "1",

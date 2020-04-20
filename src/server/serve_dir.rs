@@ -2,7 +2,7 @@ use async_std::fs::File;
 use async_std::io::BufReader;
 use http_types::{Body, StatusCode};
 
-use crate::{Endpoint, Request, Response};
+use crate::{Endpoint, Request, Response, Result};
 
 use std::path::{Path, PathBuf};
 
@@ -20,7 +20,7 @@ impl ServeDir {
 }
 
 impl<State> Endpoint<State> for ServeDir {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Result<Response>> {
         let path = req.uri().path();
         let path = path.replace(&self.prefix, "");
         let path = path.trim_start_matches('/');
@@ -37,7 +37,7 @@ impl<State> Endpoint<State> for ServeDir {
                     // unauthorized case below to ensure we don't leak
                     // information of which files exist to adversaries.
                     log::warn!("File not found: {:?}", dir);
-                    return Response::new(StatusCode::NotFound);
+                    return Ok(Response::new(StatusCode::NotFound));
                 }
                 Ok(mut file_path) => {
                     // Verify this is a sub-path of the original dir.
@@ -47,7 +47,7 @@ impl<State> Endpoint<State> for ServeDir {
                         // 404 case above to ensure we don't leak
                         // information about the local fs to adversaries.
                         log::warn!("Unauthorized attempt to read: {:?}", file_path);
-                        return Response::new(StatusCode::NotFound);
+                        return Ok(Response::new(StatusCode::NotFound));
                     }
 
                     // Open the file and send back the contents.
@@ -55,7 +55,7 @@ impl<State> Endpoint<State> for ServeDir {
                         Ok(file) => file,
                         Err(_) => {
                             log::warn!("Could not open {:?}", file_path);
-                            return Response::new(StatusCode::InternalServerError);
+                            return Ok(Response::new(StatusCode::InternalServerError));
                         }
                     }
                 }
@@ -65,7 +65,7 @@ impl<State> Endpoint<State> for ServeDir {
                 Ok(metadata) => metadata.len() as usize,
                 Err(_) => {
                     log::warn!("Could not retrieve metadata");
-                    return Response::new(StatusCode::InternalServerError);
+                    return Ok(Response::new(StatusCode::InternalServerError));
                 }
             };
 
@@ -73,7 +73,7 @@ impl<State> Endpoint<State> for ServeDir {
             // TODO: fix related bug where async-h1 crashes on large files
             let mut res = Response::new(StatusCode::Ok);
             res.set_body(body);
-            res
+            Ok(res)
         })
     }
 }
